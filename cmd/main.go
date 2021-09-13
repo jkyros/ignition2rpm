@@ -189,6 +189,30 @@ func Ign2Rpm(r *rpmpack.RPM, config *ign3types.Config) error {
 
 	packTime := time.Now().Unix()
 
+	// MCO currently support sshkeys
+	coreUserSSHDir := "/home/core/.ssh"
+	for _, u := range config.Passwd.Users {
+		concatKeys := ""
+		if u.Name == "core" {
+			for _, key := range u.SSHAuthorizedKeys {
+				concatKeys = concatKeys + string(key) + "\n"
+			}
+
+		}
+		rpmfile := rpmpack.RPMFile{
+
+			Name:  filepath.Join(coreUserSSHDir, "authorized_keys"),
+			Body:  []byte(concatKeys),
+			Mode:  0644,
+			Owner: u.Name,
+			Group: u.Name,
+			MTime: uint32(packTime),
+			Type:  rpmpack.GenericFile,
+		}
+		r.AddFile(rpmfile)
+
+	}
+
 	// Map from paths in the config to where they resolve for duplicate checking
 	for _, d := range config.Storage.Directories {
 		glog.Infof("DIR: %s (%d %s) (%d %s) %v\n", d.Path, d.User.ID, d.User.Name, d.Group.ID, d.Group.Name, d.Node)
