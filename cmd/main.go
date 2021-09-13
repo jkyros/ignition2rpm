@@ -19,15 +19,16 @@ import (
 	ctrlcommon "github.com/openshift/machine-config-operator/pkg/controller/common"
 )
 
-func main() {
+var onceFrom string
+var outputRPM string
+var excludePrefix string
 
-	var onceFrom string
-	var outputRPM string
+func main() {
 
 	flag.Set("logtostderr", "true")
 	flag.Set("stderrthreshold", "WARNING")
 	flag.Set("v", "2")
-
+	flag.StringVar(&excludePrefix, "exclude-prefix", "", "Exclude files with this prefix")
 	flag.StringVar(&onceFrom, "config", "", "Config file ign/machineconfig to read")
 	flag.StringVar(&outputRPM, "output", "", "RPM target file to write")
 	flag.Parse()
@@ -45,6 +46,7 @@ func main() {
 	_ = contentFrom
 	hostname, _ := os.Hostname()
 
+	//specify some boilerplate metadata
 	packedRPM, err := rpmpack.NewRPM(rpmpack.RPMMetaData{
 		Name:        fileName,
 		Version:     "1",
@@ -238,7 +240,13 @@ func Ign2Rpm(r *rpmpack.RPM, config *ign3types.Config) error {
 	}
 
 	for _, f := range config.Storage.Files {
-		glog.Infof("FILE: %s\n", f.Path)
+
+		if strings.HasPrefix(f.Path, excludePrefix) {
+			glog.Infof("SKIPPING (prefix): %s\n", f.Path)
+			continue
+		} else {
+			glog.Infof("FILE: %s\n", f.Path)
+		}
 
 		//rpm-ostree limits where we can put files
 		//but it links some of them back into the right spots
