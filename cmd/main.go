@@ -190,10 +190,12 @@ func Ign2Rpm(r *rpmpack.RPM, config *ign3types.Config) error {
 	packTime := time.Now().Unix()
 
 	// MCO currently support sshkeys
-	coreUserSSHDir := "/home/core/.ssh"
+	//yes I'm cheating because I know /var/home becomes /home
+	coreUserSSHDir := "/var/home/core/.ssh"
 	for _, u := range config.Passwd.Users {
 		concatKeys := ""
 		if u.Name == "core" {
+			glog.Infof("Found the core user, adding authorized_keys")
 			for _, key := range u.SSHAuthorizedKeys {
 				concatKeys = concatKeys + string(key) + "\n"
 			}
